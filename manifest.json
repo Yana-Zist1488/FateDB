@@ -1,0 +1,26 @@
+{
+  "name": "Fate Servants DB",
+  "short_name": "Fate DB",
+  "description": "Личная база данных слуг Fate. Офлайн, IndexedDB, без сервера.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzBmMTExNSIgcng9IjgwIi8+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIxNTAiIGZpbGw9IiNjOWEyMjciLz48cGF0aCBkPSJNMjU2IDEwMGwtNDAgMTAwaC0xMjBsOTAgNjAtMzAgMTAwIDkwLTYwIDkwIDYwLTMwLTEwMCA5MC02MGgtMTIweiIgZmlsbD0iIzBmMTExNSIvPjwvc3ZnPg==",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzBmMTExNSIgcng9IjMwIi8+PGNpcmNsZSBjeD0iOTYiIGN5PSI5NiIgcj0iNTYiIGZpbGw9IiNjOWEyMjciLz48cGF0aCBkPSJNOTYgNDBsLTE1IDM4aC00NWwzNCAyMi0xMSAzOCAzNC0yMiAzNCAyMi0xMS0zOCAzNC0yMmgtNDV6IiBmaWxsPSIjMGYxMTE1Ii8+PC9zdmc+",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

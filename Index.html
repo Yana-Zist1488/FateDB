@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f1115" />
+<title>Fate Servants DB</title>
+<link rel="manifest" href="manifest.json" />
+<style>
+  /* ---------- Базовые переменные и тёмная тема по умолчанию ---------- */
+  :root {
+    --bg: #0f1115;
+    --surface: #171a21;
+    --surface-2: #1f232c;
+    --border: #2a2f3a;
+    --text: #e6e8ee;
+    --muted: #9aa3b2;
+    --accent: #c9a227;       /* "золото" Fate */
+    --accent-2: #7c5cff;
+    --danger: #e05252;
+    --ok: #3fbf7f;
+    --radius: 14px;
+    --shadow: 0 4px 14px rgba(0,0,0,.35);
+    --tap: 44px;
+    font-size: 16px;
+  }
+  :root.light {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #eef0f4;
+    --border: #d6dae1;
+    --text: #1a1d23;
+    --muted: #5b6472;
+    --shadow: 0 4px 14px rgba(0,0,0,.08);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* скролл внутри экранов */
+  }
+
+  /* ---------- Топбар ---------- */
+  header.topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-top, 0)) 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex: 0 0 auto;
+    z-index: 10;
+  }
+  header.topbar h1 {
+    font-size: 1.05rem; margin: 0; font-weight: 700; letter-spacing: .3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  header.topbar .spacer { flex: 1; }
+
+  /* ---------- Кнопки ---------- */
+  button, .btn {
+    min-height: var(--tap);
+    padding: 0 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: transform .05s ease, background .15s ease, border-color .15s;
+  }
+  button:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #1a1405; border-color: transparent; }
+  .btn-danger  { background: transparent; color: var(--danger); border-color: var(--danger); }
+  .btn-ghost   { background: transparent; }
+  .btn-icon    { width: var(--tap); padding: 0; font-size: 1.4rem; }
+  .fab {
+    position: fixed;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0));
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #1a1405;
+    font-size: 2rem; font-weight: 700;
+    border: none;
+    box-shadow: var(--shadow);
+    z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ---------- Контейнер экранов ---------- */
+  main {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 12px calc(90px + env(safe-area-inset-bottom, 0));
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .screen { display: none; flex-direction: column; gap: 12px; }
+  .screen.active { display: flex; }
+
+  /* ---------- Поиск и фильтры ---------- */
+  .searchbar { display: flex; gap: 8px; }
+  .searchbar input { flex: 1; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filters select { flex: 1 1 140px; }
+
+  /* ---------- Поля ввода ---------- */
+  input[type=text], input[type=search], textarea, select {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 10px 12px;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+  }
+  textarea { min-height: 100px; resize: vertical; line-height: 1.4; }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent-2); }
+  label.field { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; color: var(--muted); font-weight: 600; }
+  label.field > span.req::after { content: " *"; color: var(--danger); }
+
+  /* ---------- Карточки слуг ---------- */
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex; gap: 12px; align-items: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+  .card:active { transform: scale(.99); }
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 6px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: .75rem; font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge.class { background: rgba(201,162,39,.15); border-color: var(--accent); color: var(--accent); }
+  .badge.kind-class { background: rgba(124,92,255,.18); border-color: var(--accent-2); color: #b7a6ff; }
+  .badge.kind-personal { background: rgba(63,191,127,.15); border-color: var(--ok); color: var(--ok); }
+  .card .avatar {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #111; font-size: 1.1rem; flex: 0 0 auto;
+  }
+  .card .meta { flex: 1; min-width: 0; }
+  .card .meta h3 { margin: 0 0 4px; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .meta .sub { color: var(--muted); font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+
+  /* ---------- Детали слуги ---------- */
+  .detail-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .detail-section h3 { margin: 0 0 10px; font-size: .85rem; text-transform: uppercase; letter-spacing: .8px; color: var(--accent); }
+  .detail-section p { margin: 0 0 10px; line-height: 1.5; white-space: pre-wrap; }
+  .detail-section p:last-child { margin-bottom: 0; }
+  .kv { display: flex; gap: 8px; margin-bottom: 8px; font-size: .9rem; }
+  .kv b { color: var(--muted); font-weight: 600; min-width: 90px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .params-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .param { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+  .param .name { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .param .val { font-size: 1.1rem; font-weight: 700; }
+  .param .alt { font-size: .75rem; color: var(--accent); }
+  .skill-item, .np-item { padding: 10px 0; border-bottom: 1px dashed var(--border); }
+  .skill-item:last-child, .np-item:last-child { border-bottom: none; }
+  .skill-head, .np-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+  .skill-head .name, .np-head .name { font-weight: 700; }
+  .detail-actions { display: flex; gap: 8px; }
+  .detail-actions .btn { flex: 1; }
+
+  /* ---------- Форма ---------- */
+  form { display: flex; flex-direction: column; gap: 14px; }
+  fieldset {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin: 0;
+    background: var(--surface);
+  }
+  legend {
+    padding: 0 6px;
+    font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--accent);
+  }
+  .form-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .form-row > * { flex: 1 1 160px; min-width: 0; }
+  .param-row { display: flex; gap: 8px; align-items: flex-end; }
+  .param-row .field { flex: 1; }
+  .param-row .toggle { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .7rem; color: var(--muted); }
+  .switch { position: relative; width: 44px; height: 26px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute; inset: 0; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 999px; transition: .2s;
+  }
+  .switch .slider::before {
+    content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px;
+    background: var(--muted); border-radius: 50%; transition: .2s;
+  }
+  .switch input:checked + .slider { background: var(--accent-2); border-color: var(--accent-2); }
+  .switch input:checked + .slider::before { transform: translateX(18px); background: #fff; }
+  .dyn-item {
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px;
+    display: flex; flex-direction: column; gap: 8px; background: var(--surface-2);
+  }
+  .dyn-item .head { display: flex; gap: 8px; align-items: center; }
+  .dyn-item .head .spacer { flex: 1; }
+  .form-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .form-actions .btn { flex: 1 1 120px; }
+  .hint { font-size: .75rem; color: var(--muted); }
+  .hidden { display: none !important; }
+
+  /* ---------- Тост ---------- */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom,0));
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 16px; border-radius: 999px;
+    font-size: .85rem; opacity: 0; pointer-events: none; transition: .25s; z-index: 100;
+    box-shadow: var(--shadow); max-width: 90vw; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---------- Модалка-подтверждение ---------- */
+  #modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px;
+  }
+  #modal.show { display: flex; }
+  #modal .box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; max-width: 420px; width: 100%; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  #modal .box p { margin: 0; line-height: 1.5; }
+  #modal .box .actions { display: flex; gap: 8px; }
+  #modal .box .actions .btn { flex: 1; }
+
+  /* ---------- Десктоп ---------- */
+  @media (min-width: 720px) {
+    main { padding: 20px 24px 100px; max-width: 900px; margin: 0 auto; width: 100%; }
+    .list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .form-row > * { flex: 1 1 200px; }
+    .fab { right: calc(50% - 430px); }
+  }
+  @media (min-width: 1100px) {
+    .list { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1 id="appTitle">Fate Servants DB</h1>
+  <div class="spacer"></div>
+  <button class="btn-icon btn-ghost" id="themeBtn" title="Светлая/тёмная тема" aria-label="Сменить тему">◐</button>
+</header>
+
+<main>
+  <!-- ===================== ГЛАВНЫЙ ЭКРАН ===================== -->
+  <section class="screen active" id="screen-list">
+    <div class="searchbar">
+      <input type="search" id="searchInput" placeholder="Поиск: имя, прозвище, навык, NP…" autocomplete="off" inputmode="search" />
+    </div>
+    <div class="filters">
+      <select id="filterClass"><option value="">Все классы</option></select>
+      <select id="filterSource"><option value="">Все источники</option></select>
+    </div>
+    <div class="list" id="servantList"></div>
+    <div class="empty hidden" id="emptyState">
+      База пуста. Нажмите «+», чтобы добавить первого слугу.
+    </div>
+  </section>
+
+  <!-- ===================== ЭКРАН ДЕТАЛЕЙ ===================== -->
+  <section class="screen" id="screen-detail"></section>
+
+  <!-- ===================== ЭКРАН ФОРМЫ ===================== -->
+  <section class="screen" id="screen-form"></section>
+</main>
+
+<!-- FAB "добавить" -->
+<button class="fab hidden" id="fabAdd" title="Добавить слугу" aria-label="Добавить слугу">+</button>
+
+<!-- Тост -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Модалка подтверждения -->
+<div id="modal">
+  <div class="box">
+    <p id="modalText"></p>
+    <div class="actions">
+      <button class="btn btn-ghost" id="modalCancel">Отмена</button>
+      <button class="btn btn-primary" id="modalOk">ОК</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   Fate Servants DB — одностраничное PWA без фреймворков.
+   Данные — IndexedDB. Черновики формы — localStorage. Экспорт/импорт — JSON.
+   ========================================================================== */
+
+/* -------------------------- Константы -------------------------- */
+const DB_NAME = 'fate_servants_db';
+const DB_VERSION = 1;
+const STORE = 'servants';
+const DRAFT_KEY = 'fate_servant_draft';
+const STANDARD_CLASSES = ['Сейбер', 'Арчер', 'Лансер', 'Райдер', 'Кастер', 'Ассасин', 'Берсеркер'];
+const EXTRA_CLASS_LABEL = 'Экстра-класс';
+const PARAM_KEYS = [
+  ['strength', 'Сила'],
+  ['endurance', 'Выносливость'],
+  ['agility', 'Ловкость'],
+  ['mana', 'Мана'],
+  ['luck', 'Удача'],
+  ['np', 'NP'],
+];
+
+/* -------------------------- Утилиты -------------------------- */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const genId = () => 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+const esc = (s) => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+function toast(msg, ms = 2200) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+/* Модалка-подтверждение: возвращает Promise<boolean> */
+let modalResolver = null;
+function confirmDialog(text, okLabel = 'ОК') {
+  return new Promise((resolve) => {
+    modalResolver = resolve;
+    $('#modalText').textContent = text;
+    $('#modalOk').textContent = okLabel;
+    $('#modal').classList.add('show');
+  });
+}
+$('#modalOk').addEventListener('click', () => {
+  $('#modal').classList.remove('show');
+  modalResolver && modalResolver(true);
+});
+$('#modalCancel').addEventListener('click', () => {
+  $('#modal').classList.remove('show');
+  modalResolver && modalResolver(false);
+});
+
+/* -------------------------- Тема -------------------------- */
+(function initTheme() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') document.documentElement.classList.add('light');
+  $('#themeBtn').addEventListener('click', () => {
+    document.documentElement.classList.toggle('light');
+    localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
+  });
+})();
+
+/* -------------------------- IndexedDB -------------------------- */
+let dbPromise = null;
+function openDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        const store = db.createObjectStore(STORE, { keyPath: 'id' });
+        store.createIndex('name', 'name', { unique: false });
+        store.createIndex('class', 'class', { unique: false });
+        store.createIndex('source', 'source', { unique: false });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbPromise;
+}
+
+async function dbGetAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbGet(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbPut(servant) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(servant);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function dbDelete(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function dbClear() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function dbBulkPut(items) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    items.forEach((it) => store.put(it));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/* -------------------------- Модель / нормализация -------------------------- */
+function emptyServant() {
+  const params = {};
+  PARAM_KEYS.forEach(([k]) => { params[k] = { base: '', alt: null }; });
+  return {
+    id: genId(),
+    name: '',
+    aliases: [],
+    class: '',
+    alignment: [],
+    natural_enemy: [],
+    source: '',
+    appearance: '',
+    biography: '',
+    parameters: params,
+    skills: [],
+    noble_phantasms: [],
+    notes: '',
+  };
+}
+
+/* Приводит произвольный объект к схеме (для импорта и редактирования) */
+function normalizeServant(raw) {
+  const s = emptyServant();
+  if (!raw || typeof raw !== 'object') return s;
+  s.id = typeof raw.id === 'string' && raw.id ? raw.id : genId();
+  s.name = String(raw.name || '').trim();
+  s.aliases = Array.isArray(raw.aliases) ? raw.aliases.map(String).filter(Boolean) : [];
+  s.class = String(raw.class || '');
+  s.alignment = Array.isArray(raw.alignment) ? raw.alignment.map(String).filter(Boolean) : [];
+  s.natural_enemy = Array.isArray(raw.natural_enemy) ? raw.natural_enemy.map(String).filter(Boolean) : [];
+  s.source = String(raw.source || '');
+  s.appearance = String(raw.appearance || '');
+  s.biography = String(raw.biography || '');
+  s.notes = String(raw.notes || '');
+  const p = raw.parameters || {};
+  PARAM_KEYS.forEach(([k]) => {
+    const v = p[k] || {};
+    s.parameters[k] = {
+      base: String(v.base || ''),
+      alt: v.alt == null || v.alt === '' ? null : String(v.alt),
+    };
+  });
+  s.skills = Array.isArray(raw.skills)
+    ? raw.skills.map((sk) => ({
+        kind: sk.kind === 'personal' ? 'personal' : 'class',
+        name: String(sk.name || ''),
+        rank: String(sk.rank || ''),
+        description: String(sk.description || ''),
+      }))
+    : [];
+  s.noble_phantasms = Array.isArray(raw.noble_phantasms)
+    ? raw.noble_phantasms.map((np) => ({
+        label: String(np.label || ''),
+        name_ru: String(np.name_ru || ''),
+        name_original: String(np.name_original || ''),
+        type: String(np.type || ''),
+        rank: String(np.rank || ''),
+        effect: String(np.effect || ''),
+      }))
+    : [];
+  return s;
+}
+
+/* Полнотекстовый поиск по подстроке без учёта регистра */
+function matchesQuery(s, q) {
+  if (!q) return true;
+  const needle = q.toLowerCase();
+  const hay = [
+    s.name,
+    ...(s.aliases || []),
+    s.class,
+    s.source,
+    s.biography,
+    s.appearance,
+    s.notes,
+    ...(s.skills || []).flatMap((k) => [k.name, k.rank, k.description]),
+    ...(s.noble_phantasms || []).flatMap((n) => [n.label, n.name_ru, n.name_original, n.type, n.rank, n.effect]),
+  ].join('\n').toLowerCase();
+  return hay.includes(needle);
+}
+
+/* -------------------------- Состояние UI -------------------------- */
+const state = {
+  all: [],          // все слуги
+  view: 'list',     // list | detail | form
+  currentId: null,  // id открытого/редактируемого слуги
+  formData: null,   // объект, с которым работает форма
+  draftChecked: false,
+};
+
+/* -------------------------- Навигация между экранами -------------------------- */
+function showScreen(name) {
+  state.view = name;
+  $$('.screen').forEach((el) => el.classList.remove('active'));
+  $('#screen-' + name).classList.add('active');
+  $('#fabAdd').classList.toggle('hidden', name !== 'list');
+  $('#appTitle').textContent =
+    name === 'list' ? 'Fate Servants DB' :
+    name === 'detail' ? 'Слуга' : 'Редактирование';
+  $('main').scrollTop = 0;
+}
+
+/* -------------------------- Главный экран -------------------------- */
+async function refreshAll() {
+  state.all = await dbGetAll();
+  state.all.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+}
+
+function fillFilters() {
+  // Динамические классы: 7 стандартных + все уникальные экстра-классы из базы
+  const extra = new Set();
+  state.all.forEach((s) => {
+    if (s.class && !STANDARD_CLASSES.includes(s.class)) extra.add(s.class);
+  });
+  const classSel = $('#filterClass');
+  const prev = classSel.value;
+  classSel.innerHTML = '<option value="">Все классы</option>';
+  STANDARD_CLASSES.forEach((c) => {
+    classSel.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`);
+  });
+  Array.from(extra).sort((a, b) => a.localeCompare(b, 'ru')).forEach((c) => {
+    classSel.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)} (экстра)</option>`);
+  });
+  classSel.value = prev && Array.from(classSel.options).some((o) => o.value === prev) ? prev : '';
+
+  // Источники
+  const sources = Array.from(new Set(state.all.map((s) => s.source).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b, 'ru'));
+  const srcSel = $('#filterSource');
+  const prevSrc = srcSel.value;
+  srcSel.innerHTML = '<option value="">Все источники</option>';
+  sources.forEach((src) => {
+    srcSel.insertAdjacentHTML('beforeend', `<option value="${esc(src)}">${esc(src)}</option>`);
+  });
+  srcSel.value = sources.includes(prevSrc) ? prevSrc : '';
+}
+
+function renderList() {
+  const q = $('#searchInput').value.trim();
+  const fClass = $('#filterClass').value;
+  const fSource = $('#filterSource').value;
+
+  const filtered = state.all.filter((s) => {
+    if (fClass && s.class !== fClass) return false;
+    if (fSource && s.source !== fSource) return false;
+    return matchesQuery(s, q);
+  });
+
+  const list = $('#servantList');
+  list.innerHTML = '';
+  const empty = $('#emptyState');
+  if (filtered.length === 0) {
+    empty.classList.remove('hidden');
+    empty.textContent = state.all.length === 0
+      ? 'База пуста. Нажмите «+», чтобы добавить первого слугу.'
+      : 'Ничего не найдено.';
+    return;
+  }
+  empty.classList.add('hidden');
+
+  const frag = document.createDocumentFragment();
+  filtered.forEach((s) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.id = s.id;
+    const initial = (s.name || '?').trim().charAt(0).toUpperCase();
+    const subParts = [s.class, s.source].filter(Boolean).join(' · ');
+    card.innerHTML = `
+      <div class="avatar">${esc(initial)}</div>
+      <div class="meta">
+        <h3>${esc(s.name || '(без имени)')}</h3>
+        <div class="sub">${esc(subParts || '—')}</div>
+      </div>
+      <span class="badge class">${esc(s.class || '—')}</span>
+    `;
+    card.addEventListener('click', () => openDetail(s.id));
+    frag.appendChild(card);
+  });
+  list.appendChild(frag);
+}
+
+/* -------------------------- Экран деталей -------------------------- */
+async function openDetail(id) {
+  const s = await dbGet(id);
+  if (!s) { toast('Слуга не найден'); return; }
+  state.currentId = id;
+  renderDetail(s);
+  showScreen('detail');
+}
+
+function renderDetail(s) {
+  const sec = $('#screen-detail');
+  const paramsHtml = PARAM_KEYS.map(([k, label]) => {
+    const p = s.parameters[k] || { base: '', alt: null };
+    return `<div class="param">
+      <div class="name">${esc(label)}</div>
+      <div class="val">${esc(p.base || '—')}</div>
+      ${p.alt ? `<div class="alt">alt: ${esc(p.alt)}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const skillsHtml = s.skills.length ? s.skills.map((sk) => `
+    <div class="skill-item">
+      <div class="skill-head">
+        <span class="badge ${sk.kind === 'class' ? 'kind-class' : 'kind-personal'}">
+          ${sk.kind === 'class' ? 'классовый' : 'личный'}
+        </span>
+        <span class="name">${esc(sk.name || '—')}</span>
+        ${sk.rank ? `<span class="badge">${esc(sk.rank)}</span>` : ''}
+      </div>
+      ${sk.description ? `<p style="margin:0;color:var(--muted);font-size:.9rem;">${esc(sk.description)}</p>` : ''}
+    </div>`).join('') : '<p style="color:var(--muted);margin:0;">Нет данных</p>';
+
+  const npHtml = s.noble_phantasms.length ? s.noble_phantasms.map((np) => `
+    <div class="np-item">
+      <div class="np-head">
+        ${np.label ? `<span class="badge">${esc(np.label)}</span>` : ''}
+        <span class="name">${esc(np.name_ru || np.name_original || '—')}</span>
+        ${np.rank ? `<span class="badge">${esc(np.rank)}</span>` : ''}
+      </div>
+      ${np.name_original ? `<div style="font-size:.8rem;color:var(--muted);margin-bottom:4px;">${esc(np.name_original)}</div>` : ''}
+      ${np.type ? `<div style="font-size:.8rem;color:var(--muted);margin-bottom:4px;">Тип: ${esc(np.type)}</div>` : ''}
+      ${np.effect ? `<p style="margin:0;font-size:.9rem;">${esc(np.effect)}</p>` : ''}
+    </div>`).join('') : '<p style="color:var(--muted);margin:0;">Нет данных</p>';
+
+  const chips = (arr) => arr.length
+    ? `<div class="chips">${arr.map((x) => `<span class="badge">${esc(x)}</span>`).join('')}</div>`
+    : '<span style="color:var(--muted)">—</span>';
+
+  sec.innerHTML = `
+    <div class="detail-section">
+      <h3>Основное</h3>
+      <div class="kv"><b>Имя</b><span>${esc(s.name)}</span></div>
+      <div class="kv"><b>Класс</b><span class="badge class">${esc(s.class)}</span></div>
+      <div class="kv"><b>Источник</b><span>${esc(s.source || '—')}</span></div>
+      <div class="kv"><b>Прозвища</b><span style="flex:1">${chips(s.aliases)}</span></div>
+      <div class="kv"><b>Мировоззрение</b><span style="flex:1">${chips(s.alignment)}</span></div>
+      <div class="kv"><b>Натур. враги</b><span style="flex:1">${chips(s.natural_enemy)}</span></div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Параметры</h3>
+      <div class="params-grid">${paramsHtml}</div>
+    </div>
+
+    ${s.appearance ? `<div class="detail-section"><h3>Внешность</h3><p>${esc(s.appearance)}</p></div>` : ''}
+    ${s.biography ? `<div class="detail-section"><h3>Биография</h3><p>${esc(s.biography)}</p></div>` : ''}
+
+    <div class="detail-section">
+      <h3>Навыки</h3>
+      ${skillsHtml}
+    </div>
+
+    <div class="detail-section">
+      <h3>Благородные Фантазмы</h3>
+      ${npHtml}
+    </div>
+
+    ${s.notes ? `<div class="detail-section"><h3>Заметки</h3><p>${esc(s.notes)}</p></div>` : ''}
+
+    <div class="detail-actions">
+      <button class="btn btn-primary" id="btnEdit">✎ Редактировать</button>
+      <button class="btn btn-ghost" id="btnDup">⧉ Дублировать</button>
+      <button class="btn btn-danger" id="btnDelete">Удалить</button>
+    </div>
+    <button class="btn btn-ghost" id="btnBack">← Назад</button>
+  `;
+
+  $('#btnEdit').addEventListener('click', () => openForm(s));
+  $('#btnDup').addEventListener('click', () => duplicateServant(s));
+  $('#btnDelete').addEventListener('click', async () => {
+    const ok = await confirmDialog(`Удалить слугу «${s.name}»? Это действие необратимо.`, 'Удалить');
+    if (!ok) return;
+    await dbDelete(s.id);
+    await refreshAll();
+    fillFilters();
+    renderList();
+    showScreen('list');
+    toast('Слуга удалён');
+  });
+  $('#btnBack').addEventListener('click', () => {
+    renderList();
+    showScreen('list');
+  });
+}
+
+/* -------------------------- Форма -------------------------- */
+/* formData — живой объект, с которым работает DOM. Автосохранение черновика. */
+
+function openForm(existing) {
+  state.formData = existing ? normalizeServant(existing) : emptyServant();
+  state.currentId = existing ? existing.id : null;
+  renderForm();
+  showScreen('form');
+  setTimeout(maybeOfferDraft, 50);
+}
+
+/* --- Черновики в localStorage --- */
+function saveDraft() {
+  if (!state.formData) return;
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      data: state.formData,
+    }));
+  } catch (e) { /* квота — молча игнорируем */ }
+}
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
+async function maybeOfferDraft() {
+  if (state.draftChecked) return;
+  state.draftChecked = true;
+  const raw = localStorage.getItem(DRAFT_KEY);
+  if (!raw) return;
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (e) { clearDraft(); return; }
+  if (!parsed || !parsed.data) { clearDraft(); return; }
+  // Не предлагаем, если это тот же самый открытый слуга без изменений — упрощённо предлагаем всегда
+  const when = new Date(parsed.savedAt).toLocaleString('ru');
+  const ok = await confirmDialog(
+    `Найден несохранённый черновик от ${when}. Восстановить его? (Текущие введённые данные будут заменены.)`,
+    'Восстановить'
+  );
+  if (ok) {
+    state.formData = normalizeServant(parsed.data);
+    renderForm();
+    toast('Черновик восстановлен');
+  } else {
+    clearDraft();
+  }
+}
+
+function renderForm() {
+  const d = state.formData;
+  const sec = $('#screen-form');
+
+  // --- Параметры ---
+  const paramsHtml = PARAM_KEYS.map(([k, label]) => {
+    const p = d.parameters[k];
+    const hasAlt = p.alt != null;
+    return `
+      <div class="param-row" data-param="${k}">
+        <label class="field" style="flex:2">
+          <span>${esc(label)}</span>
+          <input type="text" data-param-base="${k}" value="${esc(p.base)}" placeholder="напр. A" inputmode="text" />
+        </label>
+        <label class="toggle">
+          <span>alt</span>
+          <span class="switch">
+            <input type="checkbox" data-param-alt-toggle="${k}" ${hasAlt ? 'checked' : ''} />
+            <span class="slider"></span>
+          </span>
+        </label>
+        <label class="field" style="flex:2 ${hasAlt ? '' : 'display:none'}" data-param-alt-wrap="${k}">
+          <span>Альтер-форма</span>
+          <input type="text" data-param-alt="${k}" value="${hasAlt ? esc(p.alt) : ''}" placeholder="напр. A+" />
+        </label>
+      </div>
+    `;
+  }).join('');
+
+  // --- Навыки ---
+  const skillsHtml = d.skills.map((sk, i) => `
+    <div class="dyn-item" data-skill-index="${i}">
+      <div class="head">
+        <span style="font-weight:700;color:var(--muted);font-size:.8rem;">Навык #${i + 1}</span>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-danger btn-icon" data-skill-remove="${i}" title="Удалить">✕</button>
+      </div>
+      <div class="form-row">
+        <label class="field">
+          <span>Тип</span>
+          <select data-skill-kind="${i}">
+            <option value="class" ${sk.kind === 'class' ? 'selected' : ''}>классовый</option>
+            <option value="personal" ${sk.kind === 'personal' ? 'selected' : ''}>личный</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Ранг</span>
+          <input type="text" data-skill-rank="${i}" value="${esc(sk.rank)}" placeholder="A / B+ / EX" />
+        </label>
+      </div>
+      <label class="field">
+        <span>Название</span>
+        <input type="text" data-skill-name="${i}" value="${esc(sk.name)}" />
+      </label>
+      <label class="field">
+        <span>Описание</span>
+        <textarea data-skill-desc="${i}" rows="2">${esc(sk.description)}</textarea>
+      </label>
+    </div>
+  `).join('');
+
+  // --- NP ---
+  const npHtml = d.noble_phantasms.map((np, i) => `
+    <div class="dyn-item" data-np-index="${i}">
+      <div class="head">
+        <span style="font-weight:700;color:var(--muted);font-size:.8rem;">NP #${i + 1}</span>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-danger btn-icon" data-np-remove="${i}" title="Удалить">✕</button>
+      </div>
+      <div class="form-row">
+        <label class="field">
+          <span>Метка</span>
+          <input type="text" data-np-label="${i}" value="${esc(np.label)}" placeholder="напр. 1" />
+        </label>
+        <label class="field">
+          <span>Ранг</span>
+          <input type="text" data-np-rank="${i}" value="${esc(np.rank)}" />
+        </label>
+      </div>
+      <label class="field">
+        <span>Название (рус)</span>
+        <input type="text" data-np-name-ru="${i}" value="${esc(np.name_ru)}" />
+      </label>
+      <label class="field">
+        <span>Название (оригинал)</span>
+        <input type="text" data-np-name-orig="${i}" value="${esc(np.name_original)}" />
+      </label>
+      <label class="field">
+        <span>Тип</span>
+        <input type="text" data-np-type="${i}" value="${esc(np.type)}" placeholder="Anti-Unit / Anti-Army…" />
+      </label>
+      <label class="field">
+        <span>Эффект</span>
+        <textarea data-np-effect="${i}" rows="2">${esc(np.effect)}</textarea>
+      </label>
+    </div>
+  `).join('');
+
+  // --- Класс: селект + поле экстра-класса ---
+  const isStandard = STANDARD_CLASSES.includes(d.class);
+  const selectedClass = isStandard ? d.class : (d.class ? EXTRA_CLASS_LABEL : '');
+  const extraValue = isStandard ? '' : (d.class || '');
+  const classOptions = ['<option value="">— выберите —</option>']
+    .concat(STANDARD_CLASSES.map((c) => `<option value="${esc(c)}" ${selectedClass === c ? 'selected' : ''}>${esc(c)}</option>`))
+    .concat(`<option value="${EXTRA_CLASS_LABEL}" ${selectedClass === EXTRA_CLASS_LABEL ? 'selected' : ''}>${EXTRA_CLASS_LABEL}</option>`)
+    .join('');
+
+  sec.innerHTML = `
+    <form id="servantForm" autocomplete="off">
+      <fieldset>
+        <legend>Основное</legend>
+        <label class="field">
+          <span class="req">Имя</span>
+          <input type="text" id="fName" value="${esc(d.name)}" required />
+        </label>
+        <label class="field">
+          <span class="req">Класс</span>
+          <select id="fClassSelect">${classOptions}</select>
+        </label>
+        <label class="field hidden" id="fClassExtraWrap">
+          <span class="req">Название экстра-класса</span>
+          <input type="text" id="fClassExtra" value="${esc(extraValue)}" placeholder="Эвейнджер / Руллер / Бист…" />
+        </label>
+        <label class="field">
+          <span>Прозвища (через запятую)</span>
+          <input type="text" id="fAliases" value="${esc(d.aliases.join(', '))}" placeholder="King of Heroes, Gil…" />
+        </label>
+        <label class="field">
+          <span>Мировоззрение (через запятую)</span>
+          <input type="text" id="fAlignment" value="${esc(d.alignment.join(', '))}" placeholder="Lawful Good, Chaotic Evil…" />
+        </label>
+        <label class="field">
+          <span>Натуральные враги (через запятую)</span>
+          <input type="text" id="fEnemies" value="${esc(d.natural_enemy.join(', '))}" />
+        </label>
+        <label class="field">
+          <span>Источник</span>
+          <input type="text" id="fSource" value="${esc(d.source)}" placeholder="Мифология / история / серия" />
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Внешность</legend>
+        <label class="field">
+          <span>Описание внешности</span>
+          <textarea id="fAppearance" rows="4">${esc(d.appearance)}</textarea>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Биография</legend>
+        <label class="field">
+          <span>Биография</span>
+          <textarea id="fBiography" rows="6">${esc(d.biography)}</textarea>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Параметры</legend>
+        ${paramsHtml}
+        <div class="hint">Переключатель «alt» включает альтер-форму параметра.</div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Навыки</legend>
+        <div id="skillsList" style="display:flex;flex-direction:column;gap:10px;">${skillsHtml}</div>
+        <button type="button" class="btn btn-ghost" id="addSkill" style="margin-top:10px;">+ добавить навык</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Благородные Фантазмы</legend>
+        <div id="npList" style="display:flex;flex-direction:column;gap:10px;">${npHtml}</div>
+        <button type="button" class="btn btn-ghost" id="addNp" style="margin-top:10px;">+ добавить NP</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Заметки</legend>
+        <label class="field">
+          <span>Заметки</span>
+          <textarea id="fNotes" rows="4">${esc(d.notes)}</textarea>
+        </label>
+      </fieldset>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <button type="button" class="btn btn-ghost" id="btnCancelForm">Отмена</button>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" id="btnExportAll">⤓ Экспорт JSON</button>
+        <button type="button" class="btn btn-ghost" id="btnImport">⤒ Импорт JSON</button>
+      </div>
+      <div class="hint">Черновик автосохраняется в localStorage при вводе.</div>
+      <input type="file" id="importFile" accept="application/json,.json" class="hidden" />
+    </form>
+  `;
+
+  bindFormEvents();
+}
+
+/* Перерисовка только списков навыков/NP, без потери фокуса в других полях —
+   проще всего перерисовать всё, но это ломает фокус. Поэтому перерисовываем
+   только контейнеры. */
+function renderSkillsList() {
+  const d = state.formData;
+  const wrap = $('#skillsList');
+  wrap.innerHTML = d.skills.map((sk, i) => `
+    <div class="dyn-item" data-skill-index="${i}">
+      <div class="head">
+        <span style="font-weight:700;color:var(--muted);font-size:.8rem;">Навык #${i + 1}</span>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-danger btn-icon" data-skill-remove="${i}" title="Удалить">✕</button>
+      </div>
+      <div class="form-row">
+        <label class="field">
+          <span>Тип</span>
+          <select data-skill-kind="${i}">
+            <option value="class" ${sk.kind === 'class' ? 'selected' : ''}>классовый</option>
+            <option value="personal" ${sk.kind === 'personal' ? 'selected' : ''}>личный</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Ранг</span>
+          <input type="text" data-skill-rank="${i}" value="${esc(sk.rank)}" placeholder="A / B+ / EX" />
+        </label>
+      </div>
+      <label class="field">
+        <span>Название</span>
+        <input type="text" data-skill-name="${i}" value="${esc(sk.name)}" />
+      </label>
+      <label class="field">
+        <span>Описание</span>
+        <textarea data-skill-desc="${i}" rows="2">${esc(sk.description)}</textarea>
+      </label>
+    </div>
+  `).join('');
+  bindSkillEvents();
+}
+
+function renderNpList() {
+  const d = state.formData;
+  const wrap = $('#npList');
+  wrap.innerHTML = d.noble_phantasms.map((np, i) => `
+    <div class="dyn-item" data-np-index="${i}">
+      <div class="head">
+        <span style="font-weight:700;color:var(--muted);font-size:.8rem;">NP #${i + 1}</span>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-danger btn-icon" data-np-remove="${i}" title="Удалить">✕</button>
+      </div>
+      <div class="form-row">
+        <label class="field">
+          <span>Метка</span>
+          <input type="text" data-np-label="${i}" value="${esc(np.label)}" placeholder="напр. 1" />
+        </label>
+        <label class="field">
+          <span>Ранг</span>
+          <input type="text" data-np-rank="${i}" value="${esc(np.rank)}" />
+        </label>
+      </div>
+      <label class="field">
+        <span>Название (рус)</span>
+        <input type="text" data-np-name-ru="${i}" value="${esc(np.name_ru)}" />
+      </label>
+      <label class="field">
+        <span>Название (оригинал)</span>
+        <input type="text" data-np-name-orig="${i}" value="${esc(np.name_original)}" />
+      </label>
+      <label class="field">
+        <span>Тип</span>
+        <input type="text" data-np-type="${i}" value="${esc(np.type)}" placeholder="Anti-Unit / Anti-Army…" />
+      </label>
+      <label class="field">
+        <span>Эффект</span>
+        <textarea data-np-effect="${i}" rows="2">${esc(np.effect)}</textarea>
+      </label>
+    </div>
+  `).join('');
+  bindNpEvents();
+}
+
+function bindSkillEvents() {
+  const d = state.formData;
+  $$('#skillsList [data-skill-kind]').forEach((el) => {
+    el.addEventListener('change', () => {
+      const i = +el.dataset.skillKind;
+      d.skills[i].kind = el.value;
+      saveDraft();
+    });
+  });
+  ['name', 'rank', 'desc'].forEach((field) => {
+    $$(`#skillsList [data-skill-${field}]`).forEach((el) => {
+      el.addEventListener('input', () => {
+        const i = +el.dataset['skill' + field.charAt(0).toUpperCase() + field.slice(1)];
+        const keyMap = { name: 'name', rank: 'rank', desc: 'description' };
+        d.skills[i][keyMap[field]] = el.value;
+        saveDraft();
+      });
+    });
+  });
+  $$('#skillsList [data-skill-remove]').forEach((el) => {
+    el.addEventListener('click', () => {
+      d.skills.splice(+el.dataset.skillRemove, 1);
+      renderSkillsList();
+      saveDraft();
+    });
+  });
+}
+
+function bindNpEvents() {
+  const d = state.formData;
+  const map = {
+    label: 'label', rank: 'rank', type: 'type', effect: 'effect',
+    nameRu: 'name_ru', nameOrig: 'name_original',
+  };
+  Object.keys(map).forEach((attr) => {
+    $$(`#npList [data-np-${attr.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}]`).forEach((el) => {
+      const datasetKey = Object.keys(el.dataset).find((k) => k.startsWith('np'));
+      el.addEventListener('input', () => {
+        const i = +el.dataset[datasetKey];
+        d.noble_phantasms[i][map[attr]] = el.value;
+        saveDraft();
+      });
+    });
+  });
+  $$('#npList [data-np-remove]').forEach((el) => {
+    el.addEventListener('click', () => {
+      d.noble_phantasms.splice(+el.dataset.npRemove, 1);
+      renderNpList();
+      saveDraft();
+    });
+  });
+}
+
+function bindFormEvents() {
+  const d = state.formData;
+
+  // --- Класс ---
+  const classSelect = $('#fClassSelect');
+  const extraWrap = $('#fClassExtraWrap');
+  const extraInput = $('#fClassExtra');
+  function syncExtraVisibility() {
+    const isExtra = classSelect.value === EXTRA_CLASS_LABEL;
+    extraWrap.classList.toggle('hidden', !isExtra);
+  }
+  syncExtraVisibility();
+  classSelect.addEventListener('change', () => {
+    if (classSelect.value === EXTRA_CLASS_LABEL) {
+      d.class = extraInput.value.trim(); // экстра-название
+    } else {
+      d.class = classSelect.value;
+    }
+    syncExtraVisibility();
+    saveDraft();
+  });
+  extraInput.addEventListener('input', () => {
+    if (classSelect.value === EXTRA_CLASS_LABEL) {
+      d.class = extraInput.value.trim();
+      saveDraft();
+    }
+  });
+
+  // --- Простые поля ---
+  const simpleBindings = [
+    ['#fName', (v) => (d.name = v), (v) => v],
+    ['#fAliases', (v) => (d.aliases = v.split(',').map((s) => s.trim()).filter(Boolean)), (v) => v],
+    ['#fAlignment', (v) => (d.alignment = v.split(',').map((s) => s.trim()).filter(Boolean)), (v) => v],
+    ['#fEnemies', (v) => (d.natural_enemy = v.split(',').map((s) => s.trim()).filter(Boolean)), (v) => v],
+    ['#fSource', (v) => (d.source = v), (v) => v],
+    ['#fAppearance', (v) => (d.appearance = v), (v) => v],
+    ['#fBiography', (v) => (d.biography = v), (v) => v],
+    ['#fNotes', (v) => (d.notes = v), (v) => v],
+  ];
+  simpleBindings.forEach(([sel, setter]) => {
+    const el = $(sel);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      setter(el.value);
+      saveDraft();
+    });
+  });
+
+  // --- Параметры ---
+  PARAM_KEYS.forEach(([k]) => {
+    const baseInput = $(`[data-param-base="${k}"]`);
+    const altInput = $(`[data-param-alt="${k}"]`);
+    const altToggle = $(`[data-param-alt-toggle="${k}"]`);
+    const altWrap = $(`[data-param-alt-wrap="${k}"]`);
+
+    baseInput.addEventListener('input', () => {
+      d.parameters[k].base = baseInput.value;
+      saveDraft();
+    });
+    altInput.addEventListener('input', () => {
+      d.parameters[k].alt = altInput.value;
+      saveDraft();
+    });
+    altToggle.addEventListener('change', () => {
+      if (altToggle.checked) {
+        altWrap.style.display = '';
+        d.parameters[k].alt = altInput.value || '';
+      } else {
+        altWrap.style.display = 'none';
+        d.parameters[k].alt = null;
+        altInput.value = '';
+      }
+      saveDraft();
+    });
+  });
+
+  // --- Кнопки добавления ---
+  $('#addSkill').addEventListener('click', () => {
+    d.skills.push({ kind: 'class', name: '', rank: '', description: '' });
+    renderSkillsList();
+    saveDraft();
+  });
+  $('#addNp').addEventListener('click', () => {
+    d.noble_phantasms.push({ label: '', name_ru: '', name_original: '', type: '', rank: '', effect: '' });
+    renderNpList();
+    saveDraft();
+  });
+
+  bindSkillEvents();
+  bindNpEvents();
+
+  // --- Отмена ---
+  $('#btnCancelForm').addEventListener('click', async () => {
+    const ok = await confirmDialog('Выйти без сохранения? Черновик останется.', 'Выйти');
+    if (!ok) return;
+    if (state.currentId) {
+      openDetail(state.currentId);
+    } else {
+      renderList();
+      showScreen('list');
+    }
+  });
+
+  // --- Сабмит ---
+  $('#servantForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    // Валидация
+    d.name = $('#fName').value.trim();
+    if (classSelect.value === EXTRA_CLASS_LABEL) {
+      d.class = extraInput.value.trim();
+    } else {
+      d.class = classSelect.value;
+    }
+    if (!d.name) { toast('Укажите имя'); $('#fName').focus(); return; }
+    if (!d.class) {
+      toast(classSelect.value === EXTRA_CLASS_LABEL ? 'Укажите название экстра-класса' : 'Выберите класс');
+      return;
+    }
+    // Если редактируем существующего — сохраняем его id; иначе новый
+    const toSave = normalizeServant(d);
+    if (state.currentId) toSave.id = state.currentId;
+    await dbPut(toSave);
+    clearDraft();
+    state.draftChecked = true;
+    await refreshAll();
+    fillFilters();
+    renderList();
+    showScreen('list');
+    toast('Сохранено');
+  });
+
+  // --- Экспорт / импорт из формы (дублируют кнопки на главном) ---
+  $('#btnExportAll').addEventListener('click', exportJSON);
+  $('#btnImport').addEventListener('click', () => $('#importFile').click());
+  $('#importFile').addEventListener('change', handleImportFile);
+}
+
+/* -------------------------- Дублирование -------------------------- */
+async function duplicateServant(s) {
+  const copy = normalizeServant(s);
+  copy.id = genId();
+  copy.name = (copy.name || 'Без имени') + ' (копия)';
+  await dbPut(copy);
+  await refreshAll();
+  fillFilters();
+  renderList();
+  toast('Слуга дублирован');
+  openDetail(copy.id);
+}
+
+/* -------------------------- Экспорт / импорт -------------------------- */
+async function exportJSON() {
+  await refreshAll();
+  const blob = new Blob([JSON.stringify(state.all, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'servants.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast('Экспортировано: servants.json');
+}
+
+async function handleImportFile(e) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ''; // чтобы можно было выбрать тот же файл снова
+  if (!file) return;
+  let data;
+  try {
+    const text = await file.text();
+    data = JSON.parse(text);
+  } catch (err) {
+    toast('Ошибка: файл не является корректным JSON');
+    return;
+  }
+  if (!Array.isArray(data)) {
+    toast('Ошибка: ожидался массив слуг');
+    return;
+  }
+  // Нормализуем и чиним дубликаты id
+  const existing = await dbGetAll();
+  const usedIds = new Set(existing.map((x) => x.id));
+  const normalized = data.map((raw) => {
+    const s = normalizeServant(raw);
+    while (usedIds.has(s.id)) s.id = genId();
+    usedIds.add(s.id);
+    return s;
+  });
+
+  const replace = await confirmDialog(
+    `Импортировано записей: ${normalized.length}. Заменить базу или добавить к существующим?`,
+    'Заменить'
+  );
+  if (replace) {
+    await dbClear();
+    await dbBulkPut(normalized);
+    toast('База заменена');
+  } else {
+    await dbBulkPut(normalized);
+    toast('Добавлено к существующим');
+  }
+  await refreshAll();
+  fillFilters();
+  renderList();
+  showScreen('list');
+}
+
+/* -------------------------- Инициализация -------------------------- */
+async function init() {
+  // Кнопки на главном экране: FAB, экспорт/импорт доступны из формы.
+  $('#fabAdd').addEventListener('click', () => {
+    state.draftChecked = false; // разрешить проверку черновика для новой формы
+    openForm(null);
+  });
+  $('#searchInput').addEventListener('input', renderList);
+  $('#filterClass').addEventListener('change', renderList);
+  $('#filterSource').addEventListener('change', renderList);
+
+  // Дополнительная панель импорта/экспорта на главном экране: вставим в шапку
+  // (чтобы было доступно всегда, а не только из формы)
+  const bar = document.createElement('div');
+  bar.className = 'form-actions';
+  bar.style.margin = '0';
+  bar.innerHTML = `
+    <button class="btn btn-ghost" id="topExport">⤓ Экспорт</button>
+    <button class="btn btn-ghost" id="topImport">⤒ Импорт</button>
+  `;
+  $('#screen-list').appendChild(bar);
+  const topFile = document.createElement('input');
+  topFile.type = 'file';
+  topFile.accept = 'application/json,.json';
+  topFile.className = 'hidden';
+  topFile.id = 'topImportFile';
+  $('#screen-list').appendChild(topFile);
+  $('#topExport').addEventListener('click', exportJSON);
+  $('#topImport').addEventListener('click', () => topFile.click());
+  topFile.addEventListener('change', handleImportFile);
+
+  await refreshAll();
+  fillFilters();
+  renderList();
+  showScreen('list');
+
+  // PWA: регистрация SW
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('service-worker.js');
+    } catch (e) {
+      console.warn('SW registration failed', e);
+    }
+  }
+}
+
+init();
+
+/* На случай, если браузер не поддерживает IndexedDB (крайне редко) */
+if (!('indexedDB' in window)) {
+  document.body.innerHTML = '<p style="padding:20px;color:#e05252">Ваш браузер не поддерживает IndexedDB.</p>';
+}
+</script>
+</body>
+</html>
