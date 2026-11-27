@@ -311,7 +311,24 @@
     </div>
   </div>
 </div>
-
+<!-- Модалка для описания классов -->
+<div id="classModal" style="position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 300; padding: 20px;">
+  <div class="box" style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; max-width: 420px; width: 100%; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px;">
+    <h3 id="classModalTitle" style="margin: 0; color: var(--accent); font-size: 1.1rem;">Класс</h3>
+    <div id="classModalDesc" style="line-height: 1.5; white-space: pre-wrap; font-size: 0.95rem;"></div>
+    
+    <!-- Поле для редактирования описания (показываем только для кастомных классов) -->
+    <div id="classModalEditWrap" class="hidden" style="display: flex; flex-direction: column; gap: 6px;">
+      <label class="field">
+        <span>Описание этого класса (сохраняется в браузере)</span>
+        <textarea id="classModalEdit" rows="4"></textarea>
+      </label>
+      <button class="btn btn-ghost" id="classModalSave" style="align-self: flex-end;">Сохранить описание</button>
+    </div>
+    
+    <button class="btn btn-primary" id="classModalClose">Закрыть</button>
+  </div>
+</div>
 <script>
 /* ============================================================================
    Fate Servants DB — одностраничное PWA без фреймворков.
@@ -335,6 +352,64 @@ const PARAM_KEYS = [
 ];
 
 /* -------------------------- Утилиты -------------------------- */
+  /* -------------------------- Описания классов -------------------------- */
+const CLASS_DESCRIPTIONS = {
+  'Сейбер': 'Мечники, делающие ставку на честный ближний бой и высочайшие показатели атаки и защиты. Обычно это герои с легендарными клинками и сильной волей, часто выступающие как «лицо» франшизы.',
+  'Арчер': 'Дальнобойные бойцы, чья сила — в точности и дистанции, а не в лобовой схватке. Класс известен исключительным набором навыков и боевого опыта, а не только луком — многие его представители бьют чем угодно, лишь бы издалека.',
+  'Лансер': 'Копейщики, мастера быстрых, точных и агрессивных атак на средней дистанции. Их стиль — скорость, манёвренность и контроль дистанции, но в сюжете им традиционно «не везёт».',
+  'Райдер': 'Всадники, чья мощь проявляется через верховых животных, транспорт и благородные фамильяры. Это самый универсальный класс: они сильны и в бою, и в мобильности, и в поддержке.',
+  'Кастер': 'Маги и чародеи, полагающиеся на заклинания, ритуалы и подготовку, а не на грубую силу. В прямом бою слабы, но в обороне, поддержке и хитроумных схемах могут быть смертельно опасны.',
+  'Ассасин': 'Скрытные убийцы, специализирующиеся на неожиданных ударах, ядах и ликвидации цели. Их сила — в скрытности и летальности одного точного удара, а не в открытом противостоянии.',
+  'Берсеркер': 'Безумные воины, жертвующие рассудком ради колоссальной физической мощи и ярости. Опасны в лоб, но плохо контролируемы и уязвимы к тактике.'
+};
+
+function getCustomClassDesc(className) {
+  return localStorage.getItem('class_desc_' + className) || '';
+}
+
+function showClassModal(className) {
+  if (!className) return;
+  const isStandard = CLASS_DESCRIPTIONS[className] !== undefined;
+  let desc = isStandard ? CLASS_DESCRIPTIONS[className] : getCustomClassDesc(className);
+  
+  if (!desc && !isStandard) {
+    desc = 'Описание для этого класса пока не добавлено.';
+  }
+
+  $('#classModalTitle').textContent = 'Класс: ' + className;
+  $('#classModalDesc').textContent = desc;
+
+  const editWrap = $('#classModalEditWrap');
+  const editArea = $('#classModalEdit');
+  const saveBtn = $('#classModalSave');
+
+  if (!isStandard) {
+    editWrap.classList.remove('hidden');
+    editArea.value = getCustomClassDesc(className);
+    // Убираем старый обработчик и вешаем новый
+    saveBtn.replaceWith(saveBtn.cloneNode(true)); 
+    $('#classModalSave').addEventListener('click', () => {
+      localStorage.setItem('class_desc_' + className, editArea.value.trim());
+      $('#classModalDesc').textContent = editArea.value.trim() || 'Описание пустое.';
+      toast('Описание класса сохранено');
+    });
+  } else {
+    editWrap.classList.add('hidden');
+  }
+
+  $('#classModal').style.display = 'flex';
+}
+
+// Инициализация закрытия модалки
+document.addEventListener('DOMContentLoaded', () => {
+  const classModal = $('#classModal');
+  if (classModal) {
+    $('#classModalClose').addEventListener('click', () => classModal.style.display = 'none');
+    classModal.addEventListener('click', (e) => {
+      if (e.target === classModal) classModal.style.display = 'none';
+    });
+  }
+});
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const genId = () => 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
@@ -689,7 +764,7 @@ function renderDetail(s) {
     <div class="detail-section">
       <h3>Основное</h3>
       <div class="kv"><b>Имя</b><span>${esc(s.name)}</span></div>
-      <div class="kv"><b>Класс</b><span class="badge class">${esc(s.class)}</span></div>
+      <div class="kv"><b>Класс</b><span class="badge class" id="detailClassBadge" style="cursor: pointer;" title="Нажмите, чтобы узнать больше">${esc(s.class)}</span></div>
       <div class="kv"><b>Источник</b><span>${esc(s.source || '—')}</span></div>
       <div class="kv"><b>Прозвища</b><span style="flex:1">${chips(s.aliases)}</span></div>
       <div class="kv"><b>Мировоззрение</b><span style="flex:1">${chips(s.alignment)}</span></div>
@@ -735,6 +810,11 @@ function renderDetail(s) {
     renderList();
     showScreen('list');
     toast('Слуга удалён');
+    // Обработчик клика по классу
+const classBadge = $('#detailClassBadge');
+if (classBadge) {
+  classBadge.addEventListener('click', () => showClassModal(s.class));
+}
   });
   $('#btnBack').addEventListener('click', () => {
     renderList();
