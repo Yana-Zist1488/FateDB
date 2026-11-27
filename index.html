@@ -15,10 +15,10 @@
     --border: #2a2f3a;
     --text: #e6e8ee;
     --muted: #9aa3b2;
-    --accent: #c9a227;       /* "золото" Fate */
-    --accent-2: #7c5cff;
+    --accent: #c9a227;       /* "золото" Fate (настраивается) */
+    --accent-2: #7c5cff;     /* классовые навыки (настраивается) */
     --danger: #e05252;
-    --ok: #3fbf7f;
+    --ok: #3fbf7f;           /* личные навыки (настраивается) */
     --radius: 14px;
     --shadow: 0 4px 14px rgba(0,0,0,.35);
     --tap: 44px;
@@ -42,7 +42,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* скролл внутри экранов */
+    overflow: hidden;
   }
 
   /* ---------- Топбар ---------- */
@@ -109,7 +109,7 @@
   .searchbar { display: flex; gap: 8px; }
   .searchbar input { flex: 1; }
   .filters { display: flex; gap: 8px; flex-wrap: wrap; }
-  .filters select { flex: 1 1 140px; }
+  .filters select { flex: 1 1 100px; font-size: 0.85rem; padding: 8px; }
 
   /* ---------- Поля ввода ---------- */
   input[type=text], input[type=search], textarea, select {
@@ -151,7 +151,7 @@
     white-space: nowrap;
   }
   .badge.class { background: rgba(201,162,39,.15); border-color: var(--accent); color: var(--accent); }
-  .badge.kind-class { background: rgba(124,92,255,.18); border-color: var(--accent-2); color: #b7a6ff; }
+  .badge.kind-class { background: rgba(124,92,255,.18); border-color: var(--accent-2); color: var(--accent-2); }
   .badge.kind-personal { background: rgba(63,191,127,.15); border-color: var(--ok); color: var(--ok); }
   .card .avatar {
     width: 48px; height: 48px; border-radius: 12px;
@@ -184,19 +184,34 @@
   .detail-actions { display: flex; gap: 8px; }
   .detail-actions .btn { flex: 1; }
 
+  /* ---------- Аккордеон (сворачиваемые секции) ---------- */
+  .accordion { padding: 0 !important; overflow: hidden; }
+  .accordion summary {
+    padding: 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+    user-select: none; list-style: none; background: var(--surface); transition: background 0.2s;
+  }
+  .accordion summary::-webkit-details-marker { display: none; }
+  .accordion summary:hover { background: var(--surface-2); }
+  .accordion summary::after {
+    content: "▼"; font-size: 0.8rem; color: var(--accent);
+    transition: transform 0.2s ease; margin-left: 10px;
+  }
+  .accordion[open] summary::after { transform: rotate(180deg); }
+  .accordion summary h3 { margin: 0; }
+  .accordion-content {
+    padding: 0 14px 14px 14px; border-top: 1px solid var(--border);
+    margin-top: 0; padding-top: 10px;
+  }
+  .accordion-content p { margin: 0; line-height: 1.5; white-space: pre-wrap; }
+
   /* ---------- Форма ---------- */
   form { display: flex; flex-direction: column; gap: 14px; }
   fieldset {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    margin: 0;
-    background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin: 0; background: var(--surface);
   }
   legend {
-    padding: 0 6px;
-    font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
-    color: var(--accent);
+    padding: 0 6px; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--accent);
   }
   .form-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .form-row > * { flex: 1 1 160px; min-width: 0; }
@@ -226,7 +241,7 @@
   .hint { font-size: .75rem; color: var(--muted); }
   .hidden { display: none !important; }
 
-  /* ---------- Тост ---------- */
+  /* ---------- Модалки и тосты ---------- */
   #toast {
     position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom,0));
     transform: translateX(-50%) translateY(20px);
@@ -237,20 +252,18 @@
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* ---------- Модалка-подтверждение ---------- */
-  #modal {
+  #modal, #classModal, #colorModal {
     position: fixed; inset: 0; background: rgba(0,0,0,.6);
     display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px;
   }
-  #modal.show { display: flex; }
-  #modal .box {
+  .box {
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 20px; max-width: 420px; width: 100%; box-shadow: var(--shadow);
-    display: flex; flex-direction: column; gap: 14px;
+    display: flex; flex-direction: column; gap: 14px; max-height: 90vh; overflow-y: auto;
   }
-  #modal .box p { margin: 0; line-height: 1.5; }
-  #modal .box .actions { display: flex; gap: 8px; }
-  #modal .box .actions .btn { flex: 1; }
+  .box p { margin: 0; line-height: 1.5; }
+  .box .actions { display: flex; gap: 8px; }
+  .box .actions .btn { flex: 1; }
 
   /* ---------- Десктоп ---------- */
   @media (min-width: 720px) {
@@ -269,6 +282,7 @@
 <header class="topbar">
   <h1 id="appTitle">Fate Servants DB</h1>
   <div class="spacer"></div>
+  <button class="btn-icon btn-ghost" id="colorBtn" title="Настройка цветов" aria-label="Настройка цветов">🎨</button>
   <button class="btn-icon btn-ghost" id="themeBtn" title="Светлая/тёмная тема" aria-label="Сменить тему">◐</button>
 </header>
 
@@ -276,16 +290,22 @@
   <!-- ===================== ГЛАВНЫЙ ЭКРАН ===================== -->
   <section class="screen active" id="screen-list">
     <div class="searchbar">
-      <input type="search" id="searchInput" placeholder="Поиск: имя, прозвище, навык, NP…" autocomplete="off" inputmode="search" />
+      <input type="search" id="searchInput" placeholder="Поиск: имя, теги, навык, NP…" autocomplete="off" inputmode="search" />
     </div>
     <div class="filters">
       <select id="filterClass"><option value="">Все классы</option></select>
       <select id="filterSource"><option value="">Все источники</option></select>
+      <select id="filterTag"><option value="">Все теги</option></select>
     </div>
     <div class="list" id="servantList"></div>
     <div class="empty hidden" id="emptyState">
       База пуста. Нажмите «+», чтобы добавить первого слугу.
     </div>
+    <div class="form-actions" style="margin-top: 10px;">
+      <button class="btn btn-ghost" id="topExport">⤓ Экспорт JSON</button>
+      <button class="btn btn-ghost" id="topImport">⤒ Импорт JSON</button>
+    </div>
+    <input type="file" id="topImportFile" accept="application/json,.json" class="hidden" />
   </section>
 
   <!-- ===================== ЭКРАН ДЕТАЛЕЙ ===================== -->
@@ -295,10 +315,7 @@
   <section class="screen" id="screen-form"></section>
 </main>
 
-<!-- FAB "добавить" -->
 <button class="fab hidden" id="fabAdd" title="Добавить слугу" aria-label="Добавить слугу">+</button>
-
-<!-- Тост -->
 <div id="toast" role="status" aria-live="polite"></div>
 
 <!-- Модалка подтверждения -->
@@ -311,9 +328,10 @@
     </div>
   </div>
 </div>
-<!-- Модалка для описания классов -->
-<div id="classModal" style="position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 300; padding: 20px;">
-  <div class="box" style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; max-width: 420px; width: 100%; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px;">
+
+<!-- Модалка описания классов -->
+<div id="classModal">
+  <div class="box">
     <h3 id="classModalTitle" style="margin: 0; color: var(--accent); font-size: 1.1rem;">Класс</h3>
     <div id="classModalDesc" style="line-height: 1.5; white-space: pre-wrap; font-size: 0.95rem;"></div>
     
@@ -329,10 +347,47 @@
     <button class="btn btn-primary" id="classModalClose">Закрыть</button>
   </div>
 </div>
+
+<!-- Модалка настройки цветов -->
+<div id="colorModal">
+  <div class="box">
+    <h3 style="margin: 0; color: var(--accent);">Настройка цветов</h3>
+    
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 0.85rem; color: var(--muted); font-weight: 600;">Главный акцент (заголовки, рамки)</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <input type="color" id="colorAccent" value="#c9a227" style="width: 40px; height: 40px; padding: 0; border: none; background: transparent; cursor: pointer; border-radius: 8px; overflow: hidden;">
+        <button class="btn btn-ghost btn-sm" data-target="--accent" data-color="#c9a227" style="padding: 4px 8px; min-height: 32px; font-size: 0.8rem;">Золото</button>
+        <button class="btn btn-ghost btn-sm" data-target="--accent" data-color="#4da6ff" style="padding: 4px 8px; min-height: 32px; font-size: 0.8rem;">Синий</button>
+        <button class="btn btn-ghost btn-sm" data-target="--accent" data-color="#e05252" style="padding: 4px 8px; min-height: 32px; font-size: 0.8rem;">Красный</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 0.85rem; color: var(--muted); font-weight: 600;">Классовые навыки</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <input type="color" id="colorClassSkill" value="#7c5cff" style="width: 40px; height: 40px; padding: 0; border: none; background: transparent; cursor: pointer; border-radius: 8px; overflow: hidden;">
+        <button class="btn btn-ghost btn-sm" data-target="--accent-2" data-color="#7c5cff" style="padding: 4px 8px; min-height: 32px; font-size: 0.8rem;">Фиолет</button>
+        <button class="btn btn-ghost btn-sm" data-target="--accent-2" data-color="#e0a800" style="padding: 4px 8px; min-height: 32px; font-size: 0.8rem;">Золото</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 0.85rem; color: var(--muted); font-weight: 600;">Личные навыки</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <input type="color" id="colorPersonalSkill" value="#3fbf7f" style="width: 40px; height: 40px; padding: 0; border: none; background: transparent; cursor: pointer; border-radius: 8px; overflow: hidden;">
+        <button class="btn btn-ghost btn-sm" data-target="--ok" data-color="#3fbf7f" style="padding: 4px 8px; min-height: 32px; font-size: 0.8rem;">Зеленый</button>
+        <button class="btn btn-ghost btn-sm" data-target="--ok" data-color="#00bcd4" style="padding: 4px 8px; min-height: 32px; font-size: 0.8rem;">Бирюза</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="colorModalClose" style="margin-top: 10px;">Закрыть</button>
+  </div>
+</div>
+
 <script>
 /* ============================================================================
    Fate Servants DB — одностраничное PWA без фреймворков.
-   Данные — IndexedDB. Черновики формы — localStorage. Экспорт/импорт — JSON.
    ========================================================================== */
 
 /* -------------------------- Константы -------------------------- */
@@ -351,8 +406,7 @@ const PARAM_KEYS = [
   ['np', 'NP'],
 ];
 
-/* -------------------------- Утилиты -------------------------- */
-  /* -------------------------- Описания классов -------------------------- */
+/* -------------------------- Описания классов -------------------------- */
 const CLASS_DESCRIPTIONS = {
   'Сейбер': 'Мечники, делающие ставку на честный ближний бой и высочайшие показатели атаки и защиты. Обычно это герои с легендарными клинками и сильной волей, часто выступающие как «лицо» франшизы.',
   'Арчер': 'Дальнобойные бойцы, чья сила — в точности и дистанции, а не в лобовой схватке. Класс известен исключительным набором навыков и боевого опыта, а не только луком — многие его представители бьют чем угодно, лишь бы издалека.',
@@ -363,53 +417,7 @@ const CLASS_DESCRIPTIONS = {
   'Берсеркер': 'Безумные воины, жертвующие рассудком ради колоссальной физической мощи и ярости. Опасны в лоб, но плохо контролируемы и уязвимы к тактике.'
 };
 
-function getCustomClassDesc(className) {
-  return localStorage.getItem('class_desc_' + className) || '';
-}
-
-function showClassModal(className) {
-  if (!className) return;
-  const isStandard = CLASS_DESCRIPTIONS[className] !== undefined;
-  let desc = isStandard ? CLASS_DESCRIPTIONS[className] : getCustomClassDesc(className);
-  
-  if (!desc && !isStandard) {
-    desc = 'Описание для этого класса пока не добавлено.';
-  }
-
-  $('#classModalTitle').textContent = 'Класс: ' + className;
-  $('#classModalDesc').textContent = desc;
-
-  const editWrap = $('#classModalEditWrap');
-  const editArea = $('#classModalEdit');
-  const saveBtn = $('#classModalSave');
-
-  if (!isStandard) {
-    editWrap.classList.remove('hidden');
-    editArea.value = getCustomClassDesc(className);
-    // Убираем старый обработчик и вешаем новый
-    saveBtn.replaceWith(saveBtn.cloneNode(true)); 
-    $('#classModalSave').addEventListener('click', () => {
-      localStorage.setItem('class_desc_' + className, editArea.value.trim());
-      $('#classModalDesc').textContent = editArea.value.trim() || 'Описание пустое.';
-      toast('Описание класса сохранено');
-    });
-  } else {
-    editWrap.classList.add('hidden');
-  }
-
-  $('#classModal').style.display = 'flex';
-}
-
-// Инициализация закрытия модалки
-document.addEventListener('DOMContentLoaded', () => {
-  const classModal = $('#classModal');
-  if (classModal) {
-    $('#classModalClose').addEventListener('click', () => classModal.style.display = 'none');
-    classModal.addEventListener('click', (e) => {
-      if (e.target === classModal) classModal.style.display = 'none';
-    });
-  }
-});
+/* -------------------------- Утилиты -------------------------- */
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const genId = () => 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
@@ -425,7 +433,6 @@ function toast(msg, ms = 2200) {
   el._t = setTimeout(() => el.classList.remove('show'), ms);
 }
 
-/* Модалка-подтверждение: возвращает Promise<boolean> */
 let modalResolver = null;
 function confirmDialog(text, okLabel = 'ОК') {
   return new Promise((resolve) => {
@@ -453,6 +460,95 @@ $('#modalCancel').addEventListener('click', () => {
     localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
   });
 })();
+
+/* -------------------------- Модалка классов -------------------------- */
+function getCustomClassDesc(className) {
+  return localStorage.getItem('class_desc_' + className) || '';
+}
+
+function showClassModal(className) {
+  if (!className) return;
+  const isStandard = CLASS_DESCRIPTIONS[className] !== undefined;
+  let desc = isStandard ? CLASS_DESCRIPTIONS[className] : getCustomClassDesc(className);
+  
+  if (!desc && !isStandard) {
+    desc = 'Описание для этого класса пока не добавлено.';
+  }
+
+  $('#classModalTitle').textContent = 'Класс: ' + className;
+  $('#classModalDesc').textContent = desc;
+
+  const editWrap = $('#classModalEditWrap');
+  const editArea = $('#classModalEdit');
+  const saveBtn = $('#classModalSave');
+
+  if (!isStandard) {
+    editWrap.classList.remove('hidden');
+    editArea.value = getCustomClassDesc(className);
+    saveBtn.replaceWith(saveBtn.cloneNode(true)); 
+    $('#classModalSave').addEventListener('click', () => {
+      localStorage.setItem('class_desc_' + className, editArea.value.trim());
+      $('#classModalDesc').textContent = editArea.value.trim() || 'Описание пустое.';
+      toast('Описание класса сохранено');
+    });
+  } else {
+    editWrap.classList.add('hidden');
+  }
+
+  $('#classModal').style.display = 'flex';
+}
+
+/* -------------------------- Модалка цветов -------------------------- */
+function initColorSettings() {
+  const colorBtn = $('#colorBtn');
+  const colorModal = $('#colorModal');
+  if (!colorBtn || !colorModal) return;
+
+  const applyColors = () => {
+    const settings = JSON.parse(localStorage.getItem('color_settings') || '{}');
+    if (settings.accent) document.documentElement.style.setProperty('--accent', settings.accent);
+    if (settings.accent2) document.documentElement.style.setProperty('--accent-2', settings.accent2);
+    if (settings.ok) document.documentElement.style.setProperty('--ok', settings.ok);
+    
+    if (settings.accent) $('#colorAccent').value = settings.accent;
+    if (settings.accent2) $('#colorClassSkill').value = settings.accent2;
+    if (settings.ok) $('#colorPersonalSkill').value = settings.ok;
+  };
+  applyColors();
+
+  const saveColors = () => {
+    const settings = {
+      accent: $('#colorAccent').value,
+      accent2: $('#colorClassSkill').value,
+      ok: $('#colorPersonalSkill').value,
+    };
+    localStorage.setItem('color_settings', JSON.stringify(settings));
+    applyColors();
+  };
+
+  colorBtn.addEventListener('click', () => colorModal.style.display = 'flex');
+  $('#colorModalClose').addEventListener('click', () => colorModal.style.display = 'none');
+  colorModal.addEventListener('click', (e) => {
+    if (e.target === colorModal) colorModal.style.display = 'none';
+  });
+
+  $('#colorAccent').addEventListener('input', saveColors);
+  $('#colorClassSkill').addEventListener('input', saveColors);
+  $('#colorPersonalSkill').addEventListener('input', saveColors);
+
+  colorModal.querySelectorAll('[data-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetVar = btn.dataset.target;
+      const color = btn.dataset.color;
+      
+      if (targetVar === '--accent') $('#colorAccent').value = color;
+      if (targetVar === '--accent-2') $('#colorClassSkill').value = color;
+      if (targetVar === '--ok') $('#colorPersonalSkill').value = color;
+      
+      saveColors();
+    });
+  });
+}
 
 /* -------------------------- IndexedDB -------------------------- */
 let dbPromise = null;
@@ -538,6 +634,7 @@ function emptyServant() {
     id: genId(),
     name: '',
     aliases: [],
+    tags: [], // <-- ДОБАВЛЕНО
     class: '',
     alignment: [],
     natural_enemy: [],
@@ -551,13 +648,13 @@ function emptyServant() {
   };
 }
 
-/* Приводит произвольный объект к схеме (для импорта и редактирования) */
 function normalizeServant(raw) {
   const s = emptyServant();
   if (!raw || typeof raw !== 'object') return s;
   s.id = typeof raw.id === 'string' && raw.id ? raw.id : genId();
   s.name = String(raw.name || '').trim();
   s.aliases = Array.isArray(raw.aliases) ? raw.aliases.map(String).filter(Boolean) : [];
+  s.tags = Array.isArray(raw.tags) ? raw.tags.map(String).filter(Boolean) : []; // <-- ДОБАВЛЕНО
   s.class = String(raw.class || '');
   s.alignment = Array.isArray(raw.alignment) ? raw.alignment.map(String).filter(Boolean) : [];
   s.natural_enemy = Array.isArray(raw.natural_enemy) ? raw.natural_enemy.map(String).filter(Boolean) : [];
@@ -594,13 +691,13 @@ function normalizeServant(raw) {
   return s;
 }
 
-/* Полнотекстовый поиск по подстроке без учёта регистра */
 function matchesQuery(s, q) {
   if (!q) return true;
   const needle = q.toLowerCase();
   const hay = [
     s.name,
     ...(s.aliases || []),
+    ...(s.tags || []), // <-- ДОБАВЛЕНО
     s.class,
     s.source,
     s.biography,
@@ -614,22 +711,22 @@ function matchesQuery(s, q) {
 
 /* -------------------------- Состояние UI -------------------------- */
 const state = {
-  all: [],          // все слуги
-  view: 'list',     // list | detail | form
-  currentId: null,  // id открытого/редактируемого слуги
-  formData: null,   // объект, с которым работает форма
-  draftChecked: false,
+  all: [], view: 'list', currentId: null, formData: null, draftChecked: false,
 };
 
-/* -------------------------- Навигация между экранами -------------------------- */
-function showScreen(name) {
+function showScreen(name, title = '') {
   state.view = name;
   $$('.screen').forEach((el) => el.classList.remove('active'));
   $('#screen-' + name).classList.add('active');
   $('#fabAdd').classList.toggle('hidden', name !== 'list');
-  $('#appTitle').textContent =
-    name === 'list' ? 'Fate Servants DB' :
-    name === 'detail' ? 'Слуга' : 'Редактирование';
+  
+  if (name === 'list') {
+    $('#appTitle').textContent = 'Fate Servants DB';
+  } else if (name === 'detail') {
+    $('#appTitle').textContent = title || 'Слуга';
+  } else if (name === 'form') {
+    $('#appTitle').textContent = title ? `Ред.: ${title}` : 'Редактирование';
+  }
   $('main').scrollTop = 0;
 }
 
@@ -640,7 +737,6 @@ async function refreshAll() {
 }
 
 function fillFilters() {
-  // Динамические классы: 7 стандартных + все уникальные экстра-классы из базы
   const extra = new Set();
   state.all.forEach((s) => {
     if (s.class && !STANDARD_CLASSES.includes(s.class)) extra.add(s.class);
@@ -656,7 +752,6 @@ function fillFilters() {
   });
   classSel.value = prev && Array.from(classSel.options).some((o) => o.value === prev) ? prev : '';
 
-  // Источники
   const sources = Array.from(new Set(state.all.map((s) => s.source).filter(Boolean)))
     .sort((a, b) => a.localeCompare(b, 'ru'));
   const srcSel = $('#filterSource');
@@ -666,16 +761,31 @@ function fillFilters() {
     srcSel.insertAdjacentHTML('beforeend', `<option value="${esc(src)}">${esc(src)}</option>`);
   });
   srcSel.value = sources.includes(prevSrc) ? prevSrc : '';
+
+  // Теги
+  const allTags = new Set();
+  state.all.forEach((s) => {
+    if (s.tags) s.tags.forEach((t) => allTags.add(t));
+  });
+  const tagSel = $('#filterTag');
+  const prevTag = tagSel.value;
+  tagSel.innerHTML = '<option value="">Все теги</option>';
+  Array.from(allTags).sort((a, b) => a.localeCompare(b, 'ru')).forEach((t) => {
+    tagSel.insertAdjacentHTML('beforeend', `<option value="${esc(t)}">${esc(t)}</option>`);
+  });
+  tagSel.value = allTags.has(prevTag) ? prevTag : '';
 }
 
 function renderList() {
   const q = $('#searchInput').value.trim();
   const fClass = $('#filterClass').value;
   const fSource = $('#filterSource').value;
+  const fTag = $('#filterTag').value;
 
   const filtered = state.all.filter((s) => {
     if (fClass && s.class !== fClass) return false;
     if (fSource && s.source !== fSource) return false;
+    if (fTag && (!s.tags || !s.tags.includes(fTag))) return false;
     return matchesQuery(s, q);
   });
 
@@ -718,7 +828,7 @@ async function openDetail(id) {
   if (!s) { toast('Слуга не найден'); return; }
   state.currentId = id;
   renderDetail(s);
-  showScreen('detail');
+  showScreen('detail', s.name);
 }
 
 function renderDetail(s) {
@@ -771,13 +881,35 @@ function renderDetail(s) {
       <div class="kv"><b>Натур. враги</b><span style="flex:1">${chips(s.natural_enemy)}</span></div>
     </div>
 
+    ${s.tags && s.tags.length ? `
+      <details class="detail-section accordion">
+        <summary><h3>Теги</h3></summary>
+        <div class="accordion-content">
+          <div class="chips">
+            ${s.tags.map(t => `<span class="badge">${esc(t)}</span>`).join('')}
+          </div>
+        </div>
+      </details>
+    ` : ''}
+
     <div class="detail-section">
       <h3>Параметры</h3>
       <div class="params-grid">${paramsHtml}</div>
     </div>
 
-    ${s.appearance ? `<div class="detail-section"><h3>Внешность</h3><p>${esc(s.appearance)}</p></div>` : ''}
-    ${s.biography ? `<div class="detail-section"><h3>Биография</h3><p>${esc(s.biography)}</p></div>` : ''}
+    ${s.appearance ? `
+      <details class="detail-section accordion">
+        <summary><h3>Внешность</h3></summary>
+        <div class="accordion-content"><p>${esc(s.appearance)}</p></div>
+      </details>
+    ` : ''}
+    
+    ${s.biography ? `
+      <details class="detail-section accordion">
+        <summary><h3>Биография</h3></summary>
+        <div class="accordion-content"><p>${esc(s.biography)}</p></div>
+      </details>
+    ` : ''}
 
     <div class="detail-section">
       <h3>Навыки</h3>
@@ -810,30 +942,27 @@ function renderDetail(s) {
     renderList();
     showScreen('list');
     toast('Слуга удалён');
-    // Обработчик клика по классу
-const classBadge = $('#detailClassBadge');
-if (classBadge) {
-  classBadge.addEventListener('click', () => showClassModal(s.class));
-}
   });
   $('#btnBack').addEventListener('click', () => {
     renderList();
     showScreen('list');
   });
+
+  const classBadge = $('#detailClassBadge');
+  if (classBadge) {
+    classBadge.addEventListener('click', () => showClassModal(s.class));
+  }
 }
 
 /* -------------------------- Форма -------------------------- */
-/* formData — живой объект, с которым работает DOM. Автосохранение черновика. */
-
 function openForm(existing) {
   state.formData = existing ? normalizeServant(existing) : emptyServant();
   state.currentId = existing ? existing.id : null;
   renderForm();
-  showScreen('form');
+  showScreen('form', state.formData.name);
   setTimeout(maybeOfferDraft, 50);
 }
 
-/* --- Черновики в localStorage --- */
 function saveDraft() {
   if (!state.formData) return;
   try {
@@ -854,7 +983,6 @@ async function maybeOfferDraft() {
   let parsed;
   try { parsed = JSON.parse(raw); } catch (e) { clearDraft(); return; }
   if (!parsed || !parsed.data) { clearDraft(); return; }
-  // Не предлагаем, если это тот же самый открытый слуга без изменений — упрощённо предлагаем всегда
   const when = new Date(parsed.savedAt).toLocaleString('ru');
   const ok = await confirmDialog(
     `Найден несохранённый черновик от ${when}. Восстановить его? (Текущие введённые данные будут заменены.)`,
@@ -873,7 +1001,6 @@ function renderForm() {
   const d = state.formData;
   const sec = $('#screen-form');
 
-  // --- Параметры ---
   const paramsHtml = PARAM_KEYS.map(([k, label]) => {
     const p = d.parameters[k];
     const hasAlt = p.alt != null;
@@ -898,7 +1025,7 @@ function renderForm() {
     `;
   }).join('');
 
-  // --- Навыки ---
+  // Навыки (название -> тип/ранг -> описание)
   const skillsHtml = d.skills.map((sk, i) => `
     <div class="dyn-item" data-skill-index="${i}">
       <div class="head">
@@ -906,6 +1033,12 @@ function renderForm() {
         <div class="spacer"></div>
         <button type="button" class="btn btn-danger btn-icon" data-skill-remove="${i}" title="Удалить">✕</button>
       </div>
+      
+      <label class="field">
+        <span>Название</span>
+        <input type="text" data-skill-name="${i}" value="${esc(sk.name)}" />
+      </label>
+
       <div class="form-row">
         <label class="field">
           <span>Тип</span>
@@ -919,10 +1052,7 @@ function renderForm() {
           <input type="text" data-skill-rank="${i}" value="${esc(sk.rank)}" placeholder="A / B+ / EX" />
         </label>
       </div>
-      <label class="field">
-        <span>Название</span>
-        <input type="text" data-skill-name="${i}" value="${esc(sk.name)}" />
-      </label>
+
       <label class="field">
         <span>Описание</span>
         <textarea data-skill-desc="${i}" rows="2">${esc(sk.description)}</textarea>
@@ -930,7 +1060,7 @@ function renderForm() {
     </div>
   `).join('');
 
-  // --- NP ---
+  // NP (название -> метка/ранг -> тип -> эффект)
   const npHtml = d.noble_phantasms.map((np, i) => `
     <div class="dyn-item" data-np-index="${i}">
       <div class="head">
@@ -938,6 +1068,16 @@ function renderForm() {
         <div class="spacer"></div>
         <button type="button" class="btn btn-danger btn-icon" data-np-remove="${i}" title="Удалить">✕</button>
       </div>
+
+      <label class="field">
+        <span>Название (рус)</span>
+        <input type="text" data-np-name-ru="${i}" value="${esc(np.name_ru)}" />
+      </label>
+      <label class="field">
+        <span>Название (оригинал)</span>
+        <input type="text" data-np-name-orig="${i}" value="${esc(np.name_original)}" />
+      </label>
+
       <div class="form-row">
         <label class="field">
           <span>Метка</span>
@@ -948,26 +1088,20 @@ function renderForm() {
           <input type="text" data-np-rank="${i}" value="${esc(np.rank)}" />
         </label>
       </div>
-      <label class="field">
-        <span>Название (рус)</span>
-        <input type="text" data-np-name-ru="${i}" value="${esc(np.name_ru)}" />
-      </label>
-      <label class="field">
-        <span>Название (оригинал)</span>
-        <input type="text" data-np-name-orig="${i}" value="${esc(np.name_original)}" />
-      </label>
+
       <label class="field">
         <span>Тип</span>
         <input type="text" data-np-type="${i}" value="${esc(np.type)}" placeholder="Anti-Unit / Anti-Army…" />
       </label>
+
       <label class="field">
         <span>Эффект</span>
-        <textarea data-np-effect="${i}" rows="2">${esc(np.effect)}</textarea>
+        <textarea data-np-effect="${i}" rows="3">${esc(np.effect)}</textarea>
       </label>
     </div>
   `).join('');
 
-  // --- Класс: селект + поле экстра-класса ---
+  // Класс
   const isStandard = STANDARD_CLASSES.includes(d.class);
   const selectedClass = isStandard ? d.class : (d.class ? EXTRA_CLASS_LABEL : '');
   const extraValue = isStandard ? '' : (d.class || '');
@@ -995,6 +1129,10 @@ function renderForm() {
         <label class="field">
           <span>Прозвища (через запятую)</span>
           <input type="text" id="fAliases" value="${esc(d.aliases.join(', '))}" placeholder="King of Heroes, Gil…" />
+        </label>
+        <label class="field">
+          <span>Теги (через запятую)</span>
+          <input type="text" id="fTags" value="${esc((d.tags || []).join(', '))}" placeholder="Святые, Франция, Меч…" />
         </label>
         <label class="field">
           <span>Мировоззрение (через запятую)</span>
@@ -1056,21 +1194,14 @@ function renderForm() {
         <button type="submit" class="btn btn-primary">Сохранить</button>
         <button type="button" class="btn btn-ghost" id="btnCancelForm">Отмена</button>
       </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-ghost" id="btnExportAll">⤓ Экспорт JSON</button>
-        <button type="button" class="btn btn-ghost" id="btnImport">⤒ Импорт JSON</button>
-      </div>
       <div class="hint">Черновик автосохраняется в localStorage при вводе.</div>
-      <input type="file" id="importFile" accept="application/json,.json" class="hidden" />
     </form>
   `;
 
   bindFormEvents();
 }
 
-/* Перерисовка только списков навыков/NP, без потери фокуса в других полях —
-   проще всего перерисовать всё, но это ломает фокус. Поэтому перерисовываем
-   только контейнеры. */
+/* -------------------------- Динамические списки -------------------------- */
 function renderSkillsList() {
   const d = state.formData;
   const wrap = $('#skillsList');
@@ -1081,6 +1212,12 @@ function renderSkillsList() {
         <div class="spacer"></div>
         <button type="button" class="btn btn-danger btn-icon" data-skill-remove="${i}" title="Удалить">✕</button>
       </div>
+      
+      <label class="field">
+        <span>Название</span>
+        <input type="text" data-skill-name="${i}" value="${esc(sk.name)}" />
+      </label>
+
       <div class="form-row">
         <label class="field">
           <span>Тип</span>
@@ -1094,10 +1231,7 @@ function renderSkillsList() {
           <input type="text" data-skill-rank="${i}" value="${esc(sk.rank)}" placeholder="A / B+ / EX" />
         </label>
       </div>
-      <label class="field">
-        <span>Название</span>
-        <input type="text" data-skill-name="${i}" value="${esc(sk.name)}" />
-      </label>
+
       <label class="field">
         <span>Описание</span>
         <textarea data-skill-desc="${i}" rows="2">${esc(sk.description)}</textarea>
@@ -1117,6 +1251,16 @@ function renderNpList() {
         <div class="spacer"></div>
         <button type="button" class="btn btn-danger btn-icon" data-np-remove="${i}" title="Удалить">✕</button>
       </div>
+
+      <label class="field">
+        <span>Название (рус)</span>
+        <input type="text" data-np-name-ru="${i}" value="${esc(np.name_ru)}" />
+      </label>
+      <label class="field">
+        <span>Название (оригинал)</span>
+        <input type="text" data-np-name-orig="${i}" value="${esc(np.name_original)}" />
+      </label>
+
       <div class="form-row">
         <label class="field">
           <span>Метка</span>
@@ -1127,21 +1271,15 @@ function renderNpList() {
           <input type="text" data-np-rank="${i}" value="${esc(np.rank)}" />
         </label>
       </div>
-      <label class="field">
-        <span>Название (рус)</span>
-        <input type="text" data-np-name-ru="${i}" value="${esc(np.name_ru)}" />
-      </label>
-      <label class="field">
-        <span>Название (оригинал)</span>
-        <input type="text" data-np-name-orig="${i}" value="${esc(np.name_original)}" />
-      </label>
+
       <label class="field">
         <span>Тип</span>
         <input type="text" data-np-type="${i}" value="${esc(np.type)}" placeholder="Anti-Unit / Anti-Army…" />
       </label>
+
       <label class="field">
         <span>Эффект</span>
-        <textarea data-np-effect="${i}" rows="2">${esc(np.effect)}</textarea>
+        <textarea data-np-effect="${i}" rows="3">${esc(np.effect)}</textarea>
       </label>
     </div>
   `).join('');
@@ -1204,7 +1342,6 @@ function bindNpEvents() {
 function bindFormEvents() {
   const d = state.formData;
 
-  // --- Класс ---
   const classSelect = $('#fClassSelect');
   const extraWrap = $('#fClassExtraWrap');
   const extraInput = $('#fClassExtra');
@@ -1215,7 +1352,7 @@ function bindFormEvents() {
   syncExtraVisibility();
   classSelect.addEventListener('change', () => {
     if (classSelect.value === EXTRA_CLASS_LABEL) {
-      d.class = extraInput.value.trim(); // экстра-название
+      d.class = extraInput.value.trim();
     } else {
       d.class = classSelect.value;
     }
@@ -1229,10 +1366,10 @@ function bindFormEvents() {
     }
   });
 
-  // --- Простые поля ---
   const simpleBindings = [
     ['#fName', (v) => (d.name = v), (v) => v],
     ['#fAliases', (v) => (d.aliases = v.split(',').map((s) => s.trim()).filter(Boolean)), (v) => v],
+    ['#fTags', (v) => (d.tags = v.split(',').map((s) => s.trim()).filter(Boolean)), (v) => v], // <-- ДОБАВЛЕНО
     ['#fAlignment', (v) => (d.alignment = v.split(',').map((s) => s.trim()).filter(Boolean)), (v) => v],
     ['#fEnemies', (v) => (d.natural_enemy = v.split(',').map((s) => s.trim()).filter(Boolean)), (v) => v],
     ['#fSource', (v) => (d.source = v), (v) => v],
@@ -1249,7 +1386,6 @@ function bindFormEvents() {
     });
   });
 
-  // --- Параметры ---
   PARAM_KEYS.forEach(([k]) => {
     const baseInput = $(`[data-param-base="${k}"]`);
     const altInput = $(`[data-param-alt="${k}"]`);
@@ -1277,7 +1413,6 @@ function bindFormEvents() {
     });
   });
 
-  // --- Кнопки добавления ---
   $('#addSkill').addEventListener('click', () => {
     d.skills.push({ kind: 'class', name: '', rank: '', description: '' });
     renderSkillsList();
@@ -1292,7 +1427,6 @@ function bindFormEvents() {
   bindSkillEvents();
   bindNpEvents();
 
-  // --- Отмена ---
   $('#btnCancelForm').addEventListener('click', async () => {
     const ok = await confirmDialog('Выйти без сохранения? Черновик останется.', 'Выйти');
     if (!ok) return;
@@ -1304,10 +1438,8 @@ function bindFormEvents() {
     }
   });
 
-  // --- Сабмит ---
   $('#servantForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    // Валидация
     d.name = $('#fName').value.trim();
     if (classSelect.value === EXTRA_CLASS_LABEL) {
       d.class = extraInput.value.trim();
@@ -1319,7 +1451,6 @@ function bindFormEvents() {
       toast(classSelect.value === EXTRA_CLASS_LABEL ? 'Укажите название экстра-класса' : 'Выберите класс');
       return;
     }
-    // Если редактируем существующего — сохраняем его id; иначе новый
     const toSave = normalizeServant(d);
     if (state.currentId) toSave.id = state.currentId;
     await dbPut(toSave);
@@ -1331,11 +1462,6 @@ function bindFormEvents() {
     showScreen('list');
     toast('Сохранено');
   });
-
-  // --- Экспорт / импорт из формы (дублируют кнопки на главном) ---
-  $('#btnExportAll').addEventListener('click', exportJSON);
-  $('#btnImport').addEventListener('click', () => $('#importFile').click());
-  $('#importFile').addEventListener('change', handleImportFile);
 }
 
 /* -------------------------- Дублирование -------------------------- */
@@ -1368,7 +1494,7 @@ async function exportJSON() {
 
 async function handleImportFile(e) {
   const file = e.target.files && e.target.files[0];
-  e.target.value = ''; // чтобы можно было выбрать тот же файл снова
+  e.target.value = '';
   if (!file) return;
   let data;
   try {
@@ -1382,7 +1508,6 @@ async function handleImportFile(e) {
     toast('Ошибка: ожидался массив слуг');
     return;
   }
-  // Нормализуем и чиним дубликаты id
   const existing = await dbGetAll();
   const usedIds = new Set(existing.map((x) => x.id));
   const normalized = data.map((raw) => {
@@ -1412,41 +1537,33 @@ async function handleImportFile(e) {
 
 /* -------------------------- Инициализация -------------------------- */
 async function init() {
-  // Кнопки на главном экране: FAB, экспорт/импорт доступны из формы.
   $('#fabAdd').addEventListener('click', () => {
-    state.draftChecked = false; // разрешить проверку черновика для новой формы
+    state.draftChecked = false;
     openForm(null);
   });
   $('#searchInput').addEventListener('input', renderList);
   $('#filterClass').addEventListener('change', renderList);
   $('#filterSource').addEventListener('change', renderList);
-
-  // Дополнительная панель импорта/экспорта на главном экране: вставим в шапку
-  // (чтобы было доступно всегда, а не только из формы)
-  const bar = document.createElement('div');
-  bar.className = 'form-actions';
-  bar.style.margin = '0';
-  bar.innerHTML = `
-    <button class="btn btn-ghost" id="topExport">⤓ Экспорт</button>
-    <button class="btn btn-ghost" id="topImport">⤒ Импорт</button>
-  `;
-  $('#screen-list').appendChild(bar);
-  const topFile = document.createElement('input');
-  topFile.type = 'file';
-  topFile.accept = 'application/json,.json';
-  topFile.className = 'hidden';
-  topFile.id = 'topImportFile';
-  $('#screen-list').appendChild(topFile);
+  $('#filterTag').addEventListener('change', renderList);
   $('#topExport').addEventListener('click', exportJSON);
-  $('#topImport').addEventListener('click', () => topFile.click());
-  topFile.addEventListener('change', handleImportFile);
+  $('#topImport').addEventListener('click', () => $('#topImportFile').click());
+  $('#topImportFile').addEventListener('change', handleImportFile);
+
+  initColorSettings();
+
+  const classModal = $('#classModal');
+  if (classModal) {
+    $('#classModalClose').addEventListener('click', () => classModal.style.display = 'none');
+    classModal.addEventListener('click', (e) => {
+      if (e.target === classModal) classModal.style.display = 'none';
+    });
+  }
 
   await refreshAll();
   fillFilters();
   renderList();
   showScreen('list');
 
-  // PWA: регистрация SW
   if ('serviceWorker' in navigator) {
     try {
       await navigator.serviceWorker.register('service-worker.js');
@@ -1458,7 +1575,6 @@ async function init() {
 
 init();
 
-/* На случай, если браузер не поддерживает IndexedDB (крайне редко) */
 if (!('indexedDB' in window)) {
   document.body.innerHTML = '<p style="padding:20px;color:#e05252">Ваш браузер не поддерживает IndexedDB.</p>';
 }
