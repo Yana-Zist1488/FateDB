@@ -2,7 +2,7 @@
    Стратегия: cache-first с обновлением в фоне (stale-while-revalidate).
    Данные (IndexedDB) SW не трогает — они и так локальные. */
 
-const CACHE_NAME = 'fate-servants-db-v1';
+const CACHE_NAME = 'fate-servants-db-v1.5';
 const ASSETS = [
   './',
   './index.html',
